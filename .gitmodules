@@ -1,0 +1,6 @@
+[submodule "case_studies/guts"]
+	path = case_studies/guts
+	url = git@github.com:flo-schu/guts
+[submodule "case_studies/tktd_rna_pulse"]
+	path = case_studies/tktd_rna_pulse
+	url = git@github.com:flo-schu/tktd_rna_pulse
