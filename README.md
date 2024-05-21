@@ -9,7 +9,7 @@ The associated publication is ...
 
 ### Prerequisites
 
-Install git (https://git-scm.com/downloads) and conda (https://docs.anaconda.com/free/miniconda/)
+Install git (https://git-scm.com/downloads), conda (https://docs.anaconda.com/free/miniconda/) and datalad (https://handbook.datalad.org/en/latest/intro/installation.html)
 
 ### Installation
 
@@ -28,9 +28,29 @@ conda install python=3.11
 pip install -r requirements.txt
 ```
 
-The case studies should now be ready to use.
+### Downloading data and pre-computed results
+
+download the input dataset
+```bash
+datalad clone git@gin.g-node.org:/flo-schu/tktd_nrf2_zfe__data.git data
+```
+
+download results to the case study submodules
+```bash
+datalad clone git@gin.g-node.org:/flo-schu/guts__results.git case_studies/guts/results
+datalad clone git@gin.g-node.org:/flo-schu/tktd_rna_pulse__results.git case_studies/tktd_rna_pulse/results
+```
+
+If this does not work, visit the repositories and download the contents directly into
+the given locations
+
+- https://gin.g-node.org/flo-schu/tktd_rna_pulse__results > case_studies/tktd_rna_pulse/results
+- https://gin.g-node.org/flo-schu/guts__results > case_studies/guts/results
+- https://gin.g-node.org/flo-schu/tktd_nrf2_zfe__data > data
 
 ### Usage
+
+The case studies should now be ready to use.
 
 #### Interactive jupyter notebooks 
 
