@@ -1,10 +1,10 @@
+import importlib
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib import rc
-from posterior_analysis import (
-    log, prepare_casestudy, postprocess_posterior
-)
+
+from pymob.utils.store_file import prepare_casestudy
 from toopy.plot import letterer, draw_axis_letter
 
 cm = 1/2.56  # convert cm to inch
@@ -24,9 +24,10 @@ rc("font", family='sans-serif', size=9)
 # }
 
 scenarios = {
-    "guts_scaled_damage": {"title": f"GUTS-scaled-damage", "sim": None},
-    "guts_rna_2": {"title": "GUTS-RNA", "sim": None},
-    "rna_pulse_3_6c_substance_specific": {"title": "GUTS-RNA-pulse", "sim": None}, 
+    ("guts", "guts_reduced"): {"title": f"GUTS-scaled-damage", "sim": None},
+    ("guts", "guts_scaled_damage"): {"title": f"GUTS-scaled-damage", "sim": None},
+    ("guts", "guts_full_rna"): {"title": "GUTS-RNA", "sim": None},
+    ("tktd_rna_pulse", "rna_pulse_3_6c_substance_specific"): {"title": "GUTS-RNA-pulse", "sim": None}, 
 }
 
 substances = {
@@ -58,15 +59,25 @@ fig, axes = plt.subplots(
 )
 panelletter = letterer()
 
-for i, (scenario, sdict) in enumerate(scenarios.items()):
+for i, ((case_stduy, scenario), sdict) in enumerate(scenarios.items()):
     if sdict["sim"] is None:
         config = prepare_casestudy(
-            case_study=("reversible_damage", scenario),
+            case_study=(case_stduy, scenario),
             config_file="settings.cfg",
             pkg_dir="case_studies"
         )
-        from sim import SingleSubstanceSim2, xarray_indexer
-        sim = SingleSubstanceSim2(config)
+        mmod = importlib.import_module(f"{case_stduy}.mod")
+        msim = importlib.import_module(f"{case_stduy}.sim")
+        mprob = importlib.import_module(f"{case_stduy}.prob")
+        mplot = importlib.import_module(f"{case_stduy}.plot")
+        mdat = importlib.import_module(f"{case_stduy}.data")
+
+
+        msim.SingleSubstanceSim2.mod = mmod
+        msim.SingleSubstanceSim2.dat = mdat
+        msim.SingleSubstanceSim2.prob = mprob
+        msim.SingleSubstanceSim2.mplot = mplot
+        sim = msim.SingleSubstanceSim2(config)
 
         sim.set_inferer("numpyro")
         sim.inferer.load_results("numpyro_posterior_filtered.nc")
@@ -102,7 +113,7 @@ for i, (scenario, sdict) in enumerate(scenarios.items()):
                 "experiment_id": eid,
             }
 
-            obs = xarray_indexer(
+            obs = msim.xarray_indexer(
                 ds=sim.observations, 
                 indices=indices, 
                 original_index="id"
@@ -188,4 +199,4 @@ for i, (scenario, sdict) in enumerate(scenarios.items()):
     axes[2, i].set_xlabel("Time [h]")
 
 fig.subplots_adjust(bottom=0.1, top=0.9, right=0.95, left=0.12, wspace=0.1, hspace=0.1)
-fig.savefig(f"results/plots/fig1_{data_variable}_model_comparison_{len(scenarios)}_models.png", dpi=150)
+fig.savefig(f"results/fig1_{data_variable}_model_comparison_{len(scenarios)}_models.png", dpi=150)

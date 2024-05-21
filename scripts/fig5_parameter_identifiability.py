@@ -2,9 +2,8 @@ import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib import rc
-from posterior_analysis import (
-    log, prepare_casestudy, postprocess_posterior
-)
+
+from pymob.utils.store_file import prepare_casestudy
 from pymob.utils.plot_helpers import plot_loghist
 from toopy.plot import letterer, draw_axis_letter
 from parameter_identifyability import format_parameter
@@ -22,7 +21,7 @@ scenarios = {
 # load data
 for i, (scenario, sdict) in enumerate(scenarios.items()):
     config = prepare_casestudy(
-        case_study=("reversible_damage", scenario),
+        case_study=("tktd_rna_pulse", scenario),
         config_file="settings.cfg",
         pkg_dir="case_studies"
     )
@@ -145,7 +144,7 @@ for i, (scenario, sdict) in enumerate(scenarios.items()):
     axes[0,0].set_title(sdict["title"], fontsize=16)
 
 fig.subplots_adjust(wspace=0.6, bottom=0.15, left=0.12, right=0.97, top=0.92)
-fig.savefig(f"results/plots/fig6_parameter_analysis_{sub}_{par1}_{par2}.png")
+fig.savefig(f"results/fig5_parameter_analysis_{sub}_{par1}_{par2}.png")
 
 print("done!")
 

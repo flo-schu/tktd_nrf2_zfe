@@ -4,14 +4,14 @@ from scipy.stats import lognorm
 from matplotlib import pyplot as plt
 from pymob.utils.store_file import prepare_casestudy
 
-from posterior_analysis import log
+from scripts.method_posterior_analysis import log
 
 halflife = lambda y0, r, t: y0 * np.exp(-r * t)
 
 scenario = "rna_pulse_3_6c_substance_independent_rna_protein_module"
 # initialize simulation
 config = prepare_casestudy(
-    case_study=("reversible_damage", scenario),
+    case_study=("tktd_rna_pulse", scenario),
     config_file="settings.cfg",
     pkg_dir="case_studies"
 )
@@ -24,7 +24,7 @@ sim.inferer.load_results(f"numpyro_posterior_filtered.nc")
 rna_decay = sim.inferer.idata.posterior.r_rd
 rna_decay
 
-log(az.hdi(rna_decay), "results/tables/rna_halflife_hdi.txt" )
+log(az.hdi(rna_decay), "results/log_rna_halflife_hdi.txt" )
 
 y0 = 10
 r = 1
@@ -58,7 +58,7 @@ lnpars = lognorm.fit(HL, floc=0)
 p_hl = lognorm(*lnpars).pdf(t)
 ax_hist.plot(t, p_hl, color="black")
 
-log(f"Mode Half-life: {t[np.argmax(p_hl)] * 60} min", "results/tables/rna_halflife_hdi.txt", mode="a")
+log(f"Mode Half-life: {t[np.argmax(p_hl)] * 60} min", "results/log_rna_halflife_hdi.txt", mode="a")
 
 
 # ax_hist.hist(HL, bins=30)
@@ -71,4 +71,4 @@ ax_hist.set_ylim(0, p_hl.max() *1.1)
 ax.set_title("RNA expression level")
 ax_hist.set_title("RNA Half life")
 ax_hist.set_ylabel("Pr(Half-life)")
-fig.savefig("results/plots/halflife_complete.png")
+fig.savefig("results/fig_si_halflife_complete.png")
