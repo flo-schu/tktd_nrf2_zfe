@@ -4,3 +4,7 @@
 [submodule "case_studies/tktd_rna_pulse"]
 	path = case_studies/tktd_rna_pulse
 	url = git@github.com:flo-schu/tktd_rna_pulse
+[submodule "data"]
+	path = data
+	url = ./data
+	datalad-id = b7504bf1-00f5-4ebf-b5a1-88d0743aa0d3
