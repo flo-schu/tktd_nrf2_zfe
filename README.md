@@ -41,6 +41,13 @@ datalad clone git@gin.g-node.org:/flo-schu/guts__results.git case_studies/guts/r
 datalad clone git@gin.g-node.org:/flo-schu/tktd_rna_pulse__results.git case_studies/tktd_rna_pulse/results
 ```
 
+The case studies should now be (almost) ready to use. In order to be able to modify the pre-computed results, the datasets must be unlocked first:
+
+```bash
+datalad unlock case_studies/tktd_rna_pulse/results
+datalad unlock case_studies/guts/results
+```
+
 If this does not work, visit the repositories and download the contents directly into
 the given locations
 
@@ -50,7 +57,26 @@ the given locations
 
 ### Usage
 
-The case studies should now be ready to use.
+
+You may have noticed that `datalad` (https://handbook.datalad.org/en/latest/index.html) is used to obtain data and pre-computed results. Datalad is a data management tool that allows researchers to track the evolution of datasets and results. 
+
+In order to modify saved (and locked from accidental modifcation) states of the results follow this recipe:
+
+```bash
+datalad unlock case_studies/tktd_rna_pulse/results
+datalad unlock case_studies/guts/results
+
+python scripts/any-analysis-script.py
+
+datalad -d case_studies/tktd_rna_pulse/results save -m "Short description of what I did." 
+datalad -d case_studies/guts/results save -m "Short description of what I did." 
+```
+
+This recipe is necessary, because datalad (and under the hood git-annex) prevents you from accidentally modifying files. Unlocking results files first, tells datalad that you are aware that you are changing results files and you are okay with that. 
+
+Once the dataset is unlocked, you can do as many modifications of the results as you want. Whenever you want to capture a given status: `datalad save -d case_studies/CASE_STUDY/results` and unlock again.
+
+If a script fails with a **Permission Denied Error**, locked files are the most likely cause for it! See: https://handbook.datalad.org/en/latest/basics/101-110-run2.html#if-outputs-already-exist
 
 #### Interactive jupyter notebooks 
 
