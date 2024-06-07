@@ -109,7 +109,7 @@ def filter_not_converged_chains(sim, deviation=1.05):
 
     return idata
 
-def evaluate_posterior(sim, n_samples=10_000):
+def evaluate_posterior(sim, n_samples=10_000, vars_table={}):
     idata = sim.inferer.idata
     # idata.posterior = idata.posterior.chunk(chunks={"draw":100}).load()
     # idata.log_likelihood = idata.log_likelihood.chunk(chunks={"draw":100})
@@ -135,13 +135,11 @@ def evaluate_posterior(sim, n_samples=10_000):
     log_likelihood_summed = log_likelihood_summed.sum(("time", "id", "obs"))
 
     az.summary(idata.posterior)
-    vars = {"k_i":"k_i", "k_m":"k_m", "z_ci":"z_ci", "v_rt":"v_rt", "r_rt":"r_rt", 
-            "r_rd":"k_rd", "k_p":"k_p", "z":"z", "kk":"k_k", "h_b":"h_b", 
-            "sigma_cint":"σ_cint", "sigma_nrf2":"σ_Nrf2"}
+
     table = create_table(
         posterior=idata.posterior, 
         error_metric="hdi",
-        vars=vars,
+        vars=vars_table,
     )
     table_latex = table.to_latex(float_format="%.2f")
 
@@ -252,18 +250,46 @@ def print_title(title, head=True, line="="):
     print(line * len(title), end="\n\n")
 
 if __name__ == "__main__":
-    
-    scenarios = {
-        ("tktd_rna_pulse", "rna_pulse_3_6c_substance_independent_rna_protein_module"): "chains_svi",
-        ("tktd_rna_pulse", "rna_pulse_3_6c_substance_specific"): "chains_svi_2",
-        ("guts", "guts_rna_2"): "chains_svi",
-        ("guts", "guts_scaled_damage"): "chains_svi",
-        ("guts", "guts_survival"): "chains_nuts"
+    tktd_rna_pulse_vars = {
+        "k_i":"k_i", "k_m":"k_m", "z_ci":"z_ci", "v_rt":"v_rt", "r_rt":"r_rt", 
+        "r_rd":"k_rd", "k_p":"k_p", "z":"z", "kk":"k_k", "h_b":"h_b", 
+        "sigma_cint":"σ_cint", "sigma_nrf2":"σ_Nrf2"
     }
+
+    guts_full_rna_vars = {
+        "k_i":"k_i", "k_e":"k_e", "k_a":"k_a", "k_r":"k_r", 
+        "z":"z", "kk":"k_k", "h_b":"h_b", 
+        "sigma_cint":"σ_cint", "sigma_nrf2":"σ_Nrf2"
+    }
+
+    guts_scaled_damage_vars = {
+        "k_i":"k_i", "k_e":"k_e", "k_d":"k_d", "z":"z", "kk":"k_k", "h_b":"h_b", 
+        "sigma_cint":"σ_cint",
+    }
+
+    guts_reduced_vars = {
+        "k_d":"k_d", "z":"z", "kk":"k_k", "h_b":"h_b", 
+    }
+
+    scenarios = {
+        ("tktd_rna_pulse", "rna_pulse_3_6c_substance_independent_rna_protein_module"): ("chains_svi", tktd_rna_pulse_vars),
+        ("tktd_rna_pulse", "rna_pulse_3_6c_substance_specific"): ("chains_svi_2", tktd_rna_pulse_vars),
+        ("guts", "guts_full_rna"): ("chains_svi", guts_full_rna_vars),
+        ("guts", "guts_scaled_damage"): ("chains_svi", guts_scaled_damage_vars),
+        ("guts", "guts_reduced"): ("chains_nuts", guts_reduced_vars)
+    }
+    
+    # get specified scenario and casestudy combination. Provide as 
+    # CASE_STUDY__SCENARIO (the double underscore '__' separates the two)
+    css = os.environ.get("CSS")
+    if css is not None:
+        css_tuple = tuple(css.split("__"))
+        scenarios = {css_tuple: scenarios[css_tuple]}
+        print("it works")
 
     combine_chains = False
 
-    for (case_study, scenario), chain_location in scenarios.items():
+    for (case_study, scenario), (chain_location, vars_table) in scenarios.items():
         print_title(f"Parameter analysis for {scenario}")
         
         # initialize simulation
@@ -311,7 +337,7 @@ if __name__ == "__main__":
             sim.inferer.idata.to_netcdf(f"{sim.output_path}/numpyro_posterior_filtered.nc")
         
         sim.inferer.load_results(f"numpyro_posterior_filtered.nc")
-        sim.pyabc_posterior_predictions()
+        # sim.pyabc_posterior_predictions()
         with az.style.context(["arviz-darkgrid", "arviz-plasmish"], after_reset=True):
-            evaluate_posterior(sim=sim)
+            evaluate_posterior(sim=sim, n_samples=10_000, vars_table=vars_table)
 
