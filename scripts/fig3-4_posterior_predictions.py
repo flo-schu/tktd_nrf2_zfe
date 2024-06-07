@@ -44,14 +44,14 @@ def format_parameter(par, subscript_sep="_", superscript_sep="__", textwrap="\\t
 
     return formatted_string
 
-def create_table(posterior, error_metric="hdi", vars=None, rename_vars={}):
+def create_table(posterior, error_metric="hdi", vars={}):
     parameters = list(posterior.data_vars.keys())
 
     tab = az.summary(posterior, fmt="xarray", kind="stats", stat_focus="mean", hdi_prob=0.94)
-    if vars is not None:
-        tab = tab[vars]
+    if len(vars) > 0:
+        tab = tab[vars.keys()]
 
-    tab = tab.rename(rename_vars)
+    tab = tab.rename(vars)
 
     if error_metric == "sd":
         arrays = []
@@ -109,22 +109,39 @@ def filter_not_converged_chains(sim, deviation=1.05):
 
     return idata
 
-def evaluate_posterior(sim):
+def evaluate_posterior(sim, n_samples=10_000):
     idata = sim.inferer.idata
-    posterior=idata.posterior
-    log_likelihood=idata.log_likelihood
+    # idata.posterior = idata.posterior.chunk(chunks={"draw":100}).load()
+    # idata.log_likelihood = idata.log_likelihood.chunk(chunks={"draw":100})
+    n_subsample = min(
+        int(n_samples / idata.posterior.sizes["chain"]), 
+        idata.posterior.sizes["draw"]
+    )
 
-    log_likelihood_summed = log_likelihood.to_array("obs")
+    if n_subsample < 250:
+        warnings.warn(
+            "The number of samples drawn from each chain for the pairplot "
+            f"({n_subsample}) may be too small to be representative. "
+            "Consider increasing n_samples."
+        )
+
+    subsamples = np.random.randint(
+        0, idata.posterior.sizes["draw"], n_subsample
+    )
+    idata.posterior = idata.posterior.sel(draw=subsamples)
+    idata.log_likelihood = idata.log_likelihood.sel(draw=subsamples)
+
+    log_likelihood_summed = idata.log_likelihood.to_array("obs")
     log_likelihood_summed = log_likelihood_summed.sum(("time", "id", "obs"))
 
-    az.summary(posterior)
-    rename_vars = {"kk":"k_k", "sigma_cint":"σ_cint", "sigma_nrf2": "σ_Nrf2", "r_rd": "k_rd"}
-    vars = ["k_i", "k_m", "z_ci", "v_rt", "r_rt", "r_rd", "k_p", "z", "kk", "h_b", "sigma_cint", "sigma_nrf2"]
+    az.summary(idata.posterior)
+    vars = {"k_i":"k_i", "k_m":"k_m", "z_ci":"z_ci", "v_rt":"v_rt", "r_rt":"r_rt", 
+            "r_rd":"k_rd", "k_p":"k_p", "z":"z", "kk":"k_k", "h_b":"h_b", 
+            "sigma_cint":"σ_cint", "sigma_nrf2":"σ_Nrf2"}
     table = create_table(
-        posterior=posterior, 
+        posterior=idata.posterior, 
         error_metric="hdi",
         vars=vars,
-        rename_vars=rename_vars
     )
     table_latex = table.to_latex(float_format="%.2f")
 
@@ -135,7 +152,7 @@ def evaluate_posterior(sim):
     log(msg=msg, out=f"{sim.output_path}/bic.md", mode="w")
 
     fig_param = plot_posterior_samples(
-        posterior, 
+        idata.posterior, 
         col_dim="substance", 
         log=True,
         hist_kwargs = dict(hdi=True, bins=20)
@@ -144,7 +161,7 @@ def evaluate_posterior(sim):
     fig_param.savefig(f"{sim.output_path}/multichain_parameter_estimates.jpg")
     plt.close()
 
-    def plot_pairs(posterior, likelihood, n_samples=10_000):
+    def plot_pairs(posterior, likelihood):
         parameters = list(posterior.data_vars.keys())
 
         N = len(parameters)
@@ -152,17 +169,6 @@ def evaluate_posterior(sim):
         fig = plt.figure(figsize=(3*N, 3*(N+1)))
         gs = fig.add_gridspec(N, N+1, width_ratios=[1]*N+[0.2])
         
-        n_subsample = min(
-            int(n_samples / posterior.sizes["chain"]), 
-            posterior.sizes["draw"]
-        )
-
-        if n_subsample < 250:
-            warnings.warn(
-                "The number of samples drawn from each chain for the pairplot "
-                f"({n_subsample}) may be too small to be representative. "
-                "Consider increasing n_samples."
-            )
 
         i = 0
         while len(parameters_) > 0:
@@ -176,15 +182,10 @@ def evaluate_posterior(sim):
             for j, par_y in enumerate(parameters_, start=i+1):
                 ax = gs[j,i].subgridspec(1, 1).subplots()
 
-                subsamples = np.random.randint(
-                    0, posterior.sizes["draw"], n_subsample
-                )
-                subsampled_posterior = posterior.sel(draw=subsamples)
-                subsampled_likelihood = likelihood.sel(draw=subsamples)
                 scatter = ax.scatter(
-                    subsampled_posterior[par_x], 
-                    subsampled_posterior[par_y], 
-                    c=subsampled_likelihood, 
+                    posterior[par_x], 
+                    posterior[par_y], 
+                    c=likelihood, 
                     alpha=0.25,
                     s=10,
                     cmap=mpl.colormaps["plasma_r"]
@@ -202,15 +203,14 @@ def evaluate_posterior(sim):
         # fig.colorbar(scatter, cax=ax_colorbar)
         return fig
 
-    for substance in posterior.substance.values:
-        az.plot_trace(posterior.sel(substance=substance))
+    for substance in idata.posterior.substance.values:
+        az.plot_trace(idata.posterior.sel(substance=substance))
         plt.savefig(f"{sim.output_path}/multichain_pseudo_trace_{substance}.jpg")
         plt.close()
 
         fig = plot_pairs(
-            posterior=posterior.sel(substance=substance), 
+            posterior=idata.posterior.sel(substance=substance), 
             likelihood=log_likelihood_summed,
-            n_samples=10_000
         )
         fig.savefig(f"{sim.output_path}/multichain_pairs_{substance}.jpg")
         plt.close()
