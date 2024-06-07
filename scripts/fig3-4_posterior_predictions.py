@@ -141,6 +141,7 @@ def evaluate_posterior(sim, n_samples=10_000, vars_table={}):
         error_metric="hdi",
         vars=vars_table,
     )
+    table.rename(columns={"hdi 3%": "hdi 3\\%", "hdi 97%": "hdi 97\\%"})
     table_latex = table.to_latex(float_format="%.2f")
 
     log(table_latex, out=f"{sim.output_path}/parameter_table.tex", mode="w")
