@@ -140,8 +140,19 @@ def evaluate_posterior(sim, n_samples=10_000, vars_table={}):
         error_metric="hdi",
         vars=vars_table,
     )
-    table.rename(columns={"hdi 3%": "hdi 3\\%", "hdi 97%": "hdi 97\\%"})
-    table_latex = table.to_latex(float_format="%.2f")
+    table = table.rename(columns={"hdi 3%": "hdi 3\\%", "hdi 97%": "hdi 97\\%"})
+    table = table.rename(columns={c: c.capitalize() for c in table.columns.levels[0]})
+    table.columns = table.columns.set_names(["Parameters", ""])
+    table.index = [format_parameter(i) for i in list(table.index)]
+    table_latex = table.to_latex(
+        float_format="%.2f",
+        caption=(
+            "Parameter estimates and posterior highest densitiy intervals (HDI) "+
+            f"of the {sim.case_study}__{sim.scenario} model. The HDI "+
+            "contains 94\% of the probable parameter values given the data."
+        ),
+        label=f"tab:parameters-{sim.case_study}__{sim.scenario}"
+    )
 
     log(table_latex, out=f"{sim.output_path}/parameter_table.tex", mode="w")
 
@@ -253,13 +264,13 @@ if __name__ == "__main__":
     tktd_rna_pulse_vars = {
         "k_i":"k_i", "k_m":"k_m", "z_ci":"z_ci", "v_rt":"v_rt", "r_rt":"r_rt", 
         "r_rd":"k_rd", "k_p":"k_p", "z":"z", "kk":"k_k", "h_b":"h_b", 
-        "sigma_cint":"σ_cint", "sigma_nrf2":"σ_Nrf2"
+        "sigma_cint":"σ_cint", "sigma_nrf2":"σ_nrf2"
     }
 
     guts_full_rna_vars = {
         "k_i":"k_i", "k_e":"k_e", "k_a":"k_a", "k_r":"k_r", 
         "z":"z", "kk":"k_k", "h_b":"h_b", 
-        "sigma_cint":"σ_cint", "sigma_nrf2":"σ_Nrf2"
+        "sigma_cint":"σ_cint", "sigma_nrf2":"σ_nrf2"
     }
 
     guts_scaled_damage_vars = {
