@@ -14,6 +14,7 @@ from pymob.utils.store_file import prepare_casestudy
 from pymob.inference.analysis import plot_posterior_samples, bic
 from method_posterior_analysis import log
 
+rng = np.random.default_rng(1)
 
 def format_parameter(par, subscript_sep="_", superscript_sep="__", textwrap="\\text{}"):
     super_pos = par.find(superscript_sep)
@@ -125,9 +126,7 @@ def evaluate_posterior(sim, n_samples=10_000, vars_table={}):
             "Consider increasing n_samples."
         )
 
-    subsamples = np.random.randint(
-        0, idata.posterior.sizes["draw"], n_subsample
-    )
+    subsamples = rng.choice(idata.posterior.draw, n_subsample, replace=False)
     idata.posterior = idata.posterior.sel(draw=subsamples)
     idata.log_likelihood = idata.log_likelihood.sel(draw=subsamples)
 
@@ -340,5 +339,5 @@ if __name__ == "__main__":
         sim.inferer.load_results(f"numpyro_posterior_filtered.nc")
         # sim.pyabc_posterior_predictions()
         with az.style.context(["arviz-darkgrid", "arviz-plasmish"], after_reset=True):
-            evaluate_posterior(sim=sim, n_samples=10_000, vars_table=vars_table)
+            evaluate_posterior(sim=sim, n_samples=20_000, vars_table=vars_table)
 
