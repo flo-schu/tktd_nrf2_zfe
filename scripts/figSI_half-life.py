@@ -2,9 +2,10 @@ import numpy as np
 import arviz as az
 from scipy.stats import lognorm
 from matplotlib import pyplot as plt
+from matplotlib.patches import Rectangle
 from pymob.utils.store_file import prepare_casestudy
 
-from scripts.method_posterior_analysis import log
+from method_posterior_analysis import log
 
 halflife = lambda y0, r, t: y0 * np.exp(-r * t)
 
@@ -21,6 +22,8 @@ sim.set_inferer("numpyro")
 
 sim.inferer.load_results(f"numpyro_posterior_filtered.nc")
 
+
+# half life RNA
 rna_decay = sim.inferer.idata.posterior.r_rd
 rna_decay
 
@@ -52,8 +55,6 @@ ax.set_yticklabels(["0%", "50%", "100%"])
 ax.set_ylim(0,y0)
 
 
-fig, ax_hist = plt.subplots(1,1)
-
 lnpars = lognorm.fit(HL, floc=0)
 p_hl = lognorm(*lnpars).pdf(t)
 ax_hist.plot(t, p_hl, color="black")
@@ -72,3 +73,54 @@ ax.set_title("RNA expression level")
 ax_hist.set_title("RNA Half life")
 ax_hist.set_ylabel("Pr(Half-life)")
 fig.savefig("results/fig_si_halflife_complete.png")
+
+# half life Protein
+k_d = sim.inferer.idata.posterior.k_p
+k_d
+
+log(az.hdi(k_d), "results/log_protein_halflife_hdi.txt", mode="w")
+
+y0 = 10
+r = 1
+t = np.linspace(0, 120, 1000)
+
+fig, (ax, ax_hist) = plt.subplots(2,1, sharex=True)
+
+HL = []
+i = 0
+for d in k_d.draw:
+    for c in k_d.chain:
+        r = k_d.sel(chain=c, draw=d)
+        y = halflife(y0, float(r), t)
+        ax.plot(t, y, alpha=.01, color="black")
+        hl = t[np.argmin(np.abs(y - y0/2))]
+        HL.append(hl)
+        
+        i += 1
+        # if i > 1000:
+        #     break
+
+ax.set_ylabel("Protein level")
+ax.set_yticks([0, 5, 10])
+ax.set_yticklabels(["0%", "50%", "100%"])
+ax.set_ylim(0,y0)
+
+
+lnpars = lognorm.fit(HL, floc=0)
+p_hl = lognorm(*lnpars).pdf(t)
+ax_hist.plot(t, p_hl, color="black")
+
+log(f"Mode Half-life: {t[np.argmax(p_hl)]} h", "results/log_protein_halflife_hdi.txt", mode="a")
+
+y_lim = p_hl.max() *1.1
+# ax_hist.hist(HL, bins=30)
+p = ax_hist.add_patch(Rectangle((20, 0), 46-20, y_lim, fill=True, facecolor="tab:red", alpha=0.3))
+ax_hist.set_xlabel("")
+ax_hist.set_xticks([24, 48, 96])
+ax_hist.set_xticklabels([ "24 hours", "48 hours", "96 hours" ])
+ax_hist.set_xlim(0,120)
+ax_hist.set_ylim(0, y_lim)
+ax.set_title("Protein level")
+ax_hist.set_title("Protein Half life")
+ax_hist.set_ylabel("Pr(Half-life)")
+fig.savefig("results/fig_si_halflife_complete_protein.png")
