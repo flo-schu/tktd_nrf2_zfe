@@ -6,11 +6,12 @@ from matplotlib import rc
 from pymob.utils.store_file import prepare_casestudy
 from pymob.utils.plot_helpers import plot_loghist
 from toopy.plot import letterer, draw_axis_letter
-from parameter_identifyability import format_parameter
+from method_posterior_analysis import format_parameter
 
 rng = np.random.default_rng(1)
 cm = 1/2.56  # convert cm to inch
 rc("font", family='sans-serif', size=9)
+labeler = letterer()
 
 # define scenarios
 scenarios = {
@@ -56,7 +57,7 @@ def plot_single_parameter_pair(posterior, likelihood, par1, par2, axes=None):
     total_loglik = loglik.to_array().sum("variable")
 
     color = mpl.colormaps["plasma_r"]
-    color = mpl.colormaps["gray_r"]
+    # color = mpl.colormaps["gray_r"]
 
     ax_scatter = axes[1,0]
     ax_scatter.scatter(
@@ -141,6 +142,8 @@ for i, (scenario, sdict) in enumerate(scenarios.items()):
     if par2 == "kk":
         axes[1,0].set_ylabel(f"$k_k$")
 
+    draw_axis_letter(ax=axes[1,0], label=next(labeler), loc=(0.02, 0.98),
+                     fontdict={"weight": "bold", "size": 12}) 
     axes[0,0].set_title(sdict["title"], fontsize=16)
 
 fig.subplots_adjust(wspace=0.6, bottom=0.15, left=0.12, right=0.97, top=0.92)

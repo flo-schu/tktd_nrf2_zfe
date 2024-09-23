@@ -12,38 +12,9 @@ import matplotlib as mpl
 from pymob.utils.plot_helpers import plot_hist
 from pymob.utils.store_file import prepare_casestudy
 from pymob.inference.analysis import plot_posterior_samples, bic
-from method_posterior_analysis import log
+from method_posterior_analysis import log, format_parameter
 
 rng = np.random.default_rng(1)
-
-def format_parameter(par, subscript_sep="_", superscript_sep="__", textwrap="\\text{}"):
-    super_pos = par.find(superscript_sep)
-    sub_pos = par.find(subscript_sep)
-    
-    scripts = sorted(zip([sub_pos, super_pos], [subscript_sep, superscript_sep]))
-    scripts = [sep for pos, sep in scripts if pos > -1]
-
-
-    def wrap_text(substr):
-        if len(substr) == 1:
-            substring_fmt = f"{substr}"
-        else:
-            substring_fmt = textwrap.replace("{}", "{{{}}}").format(substr)
-    
-        return f"{{{substring_fmt}}}"
-
-    formatted_string = "$"
-    for i, sep in enumerate(scripts):
-        substr, par = par.split(sep, 1)
-        substring_fmt = wrap_text(substr=substr)
-
-        math_sep = "_" if sep == subscript_sep else "^"
-
-        formatted_string += substring_fmt + math_sep
-
-    formatted_string += wrap_text(par) + "$"
-
-    return formatted_string
 
 def create_table(posterior, error_metric="hdi", vars={}):
     parameters = list(posterior.data_vars.keys())

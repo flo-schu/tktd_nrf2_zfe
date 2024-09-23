@@ -57,12 +57,12 @@ ax.set_ylim(0,y0)
 
 lnpars = lognorm.fit(HL, floc=0)
 p_hl = lognorm(*lnpars).pdf(t)
-ax_hist.plot(t, p_hl, color="black")
 
 log(f"Mode Half-life: {t[np.argmax(p_hl)] * 60} min", "results/log_rna_halflife_hdi.txt", mode="a")
 
 
-# ax_hist.hist(HL, bins=30)
+_ = ax_hist.plot(t, p_hl, color="black")
+hist_, bins_, _ = ax_hist.hist(HL, bins=90, density=True)
 ax_hist.vlines(20/60, 0, p_hl.max() *1.1, color="tab:red")
 ax_hist.set_xlabel("")
 ax_hist.set_xticks([ 20/60, 1, 2, 3, 4, 5])
@@ -82,7 +82,7 @@ log(az.hdi(k_d), "results/log_protein_halflife_hdi.txt", mode="w")
 
 y0 = 10
 r = 1
-t = np.linspace(0, 120, 1000)
+t = np.linspace(0, 300, 1000)
 
 fig, (ax, ax_hist) = plt.subplots(2,1, sharex=True)
 
@@ -108,12 +108,12 @@ ax.set_ylim(0,y0)
 
 lnpars = lognorm.fit(HL, floc=0)
 p_hl = lognorm(*lnpars).pdf(t)
-ax_hist.plot(t, p_hl, color="black")
 
 log(f"Mode Half-life: {t[np.argmax(p_hl)]} h", "results/log_protein_halflife_hdi.txt", mode="a")
 
+hist_, bins_, _ = ax_hist.hist(HL, bins=90, density=True)
 y_lim = p_hl.max() *1.1
-# ax_hist.hist(HL, bins=30)
+ax_hist.plot(t, p_hl, color="black")
 p = ax_hist.add_patch(Rectangle((20, 0), 46-20, y_lim, fill=True, facecolor="tab:red", alpha=0.3))
 ax_hist.set_xlabel("")
 ax_hist.set_xticks([24, 48, 96])
