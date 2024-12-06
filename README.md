@@ -30,9 +30,10 @@ pip install -r requirements.txt
 
 ### Downloading data and pre-computed results
 
-download the input dataset
+download the input dataset and get the database from the server
 ```bash
 datalad clone git@gin.g-node.org:/flo-schu/tktd_nrf2_zfe__data.git data
+datalad get data
 ```
 
 download results to the case study submodules
