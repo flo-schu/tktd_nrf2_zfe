@@ -40,6 +40,8 @@ download results to the case study submodules
 ```bash
 datalad clone git@gin.g-node.org:/flo-schu/guts__results.git case_studies/guts/results
 datalad clone git@gin.g-node.org:/flo-schu/tktd_rna_pulse__results.git case_studies/tktd_rna_pulse/results
+datalad get case_studies/guts/results
+datalad get case_studies/tktd_rna_pulse/results
 ```
 
 The case studies should now be (almost) ready to use. In order to be able to modify the pre-computed results, the datasets must be unlocked first:
